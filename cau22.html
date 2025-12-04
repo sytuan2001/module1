@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>cau2</title>
+</head>
+<body>
+<h2>Kiểm Tra Đúng Hay Sai</h2>
+<input type="text" placeholder="Nhập số thứ 1" id="a">
+<input type="text" placeholder="Nhập số thứ 2" id="b">
+<br><br>
+<button type="button" onclick="kiemTra()">Kiểm Tra</button>
+<p id="ketqua"></p>
+<script>
+    function banThan(a, b) {
+        let sum = 0;
+        for (let i = 1; i < a; i++) {
+            if (a % i == 0) sum += i;
+        }
+        if (b == sum) return true
+        else false;
+    }
+
+    function kiemTra() {
+        let a = parseInt(document.getElementById("a").value);
+        let b = parseInt(document.getElementById("b").value);
+        if (banThan(a, b) == true && banThan(b, a) == true) document.getElementById('ketqua').innerHTML = "True";
+        else document.getElementById('ketqua').innerHTML = "False";
+    }
+</script>
+</body>
+</html>
