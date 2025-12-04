@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>bai1</title>
+</head>
+<body>
+<script>
+    let n;
+    do {
+        n = Number(prompt("Nhập số lượng phần tử (1 - 50): "));
+    } while (!Number.isInteger(n) || n <= 0 || n > 50);
+
+    let arr = [];
+
+    for (let i = 0; i < n; i++) {
+        let value = Number(prompt(`Nhập phần tử thứ ${i}: `));
+        arr.push(value);
+    }
+
+    document.write("Mảng vừa nhập: [" + arr.join(", ") + "]<br>");
+
+    let sum = 0;
+    let count = 0;
+
+    for (let i = 0; i < n; i += 2) {   // chỉ vị trí chẵn: 0,2,4,...
+        if (arr[i] % 2 !== 0) {       // số lẻ
+            sum += arr[i];
+            count++;
+        }
+    }
+
+    let avg = count > 0 ? sum / count : 0;
+
+    document.write("Trung bình cộng các số lẻ ở vị trí chẵn là: " + avg);
+
+</script>
+</body>
+</html>

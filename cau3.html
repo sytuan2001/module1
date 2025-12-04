@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Sách</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="browser-frame">
+    <div class="browser-header">
+        <div class="nav-buttons">
+            <button class="nav-btn">←</button>
+            <button class="nav-btn">→</button>
+            <button class="nav-btn">✕</button>
+            <button class="nav-btn">🏠</button>
+        </div>
+        <input type="text" class="url-bar" value="http://quanlisach.com" readonly>
+        <button class="search-btn">🔍</button>
+    </div>
+
+    <div class="content">
+        <h1>Quản lí sách</h1>
+
+        <table id="bookTable">
+            <thead>
+            <tr>
+                <th>Mã số sách</th>
+                <th>Tên sách</th>
+                <th>Năm xuất bản</th>
+                <th>Số quyển</th>
+                <th>Tình trạng</th>
+                <th>Hành động</th>
+            </tr>
+            </thead>
+            <tbody id="bookTableBody">
+            </tbody>
+        </table>
+
+        <div class="button-group">
+            <button class="btn" id="addExistingBtn">Thêm sách đã có</button>
+            <button class="btn" id="addNewBtn">Thêm sách mới</button>
+            <button class="btn" id="borrowBtn">Mượn sách</button>
+            <button class="btn" id="showMostBtn">Hiển thị sách nhiều nhất</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="addNewModal">
+    <div class="modal-content">
+        <div class="modal-header">Thêm sách mới</div>
+        <form id="addNewForm">
+            <div class="form-group">
+                <label>Mã số sách:</label>
+                <input type="text" id="newBookId" maxlength="5" placeholder="Vd: 12345">
+                <div class="error-message" id="newBookIdError">Mã sách phải có 5 ký tự, ký tự đầu từ 1-5, 4 ký tự sau từ 0-9</div>
+            </div>
+            <div class="form-group">
+                <label>Tên sách:</label>
+                <input type="text" id="newBookName" placeholder="Nhập tên sách">
+                <div class="error-message" id="newBookNameError">Tên sách không được để trống</div>
+            </div>
+            <div class="form-group">
+                <label>Năm xuất bản:</label>
+                <input type="text" id="newBookYear" maxlength="4" placeholder="Vd: 2000">
+                <div class="error-message" id="newBookYearError">Năm xuất bản phải có 4 chữ số</div>
+            </div>
+            <div class="form-group">
+                <label>Số quyển:</label>
+                <input type="number" id="newBookQuantity" min="1" placeholder="Nhập số quyển">
+                <div class="error-message" id="newBookQuantityError">Số quyển phải lớn hơn 0</div>
+            </div>
+            <div class="modal-buttons">
+                <button type="submit" class="btn">Thêm</button>
+                <button type="button" class="btn" id="cancelNewBtn">Hủy</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="addExistingModal">
+    <div class="modal-content">
+        <div class="modal-header">Thêm sách đã có</div>
+        <form id="addExistingForm">
+            <div class="form-group">
+                <label>Mã số sách:</label>
+                <input type="text" id="existingBookId" maxlength="5" placeholder="Nhập mã sách">
+                <div class="error-message" id="existingBookIdError">Mã sách không tồn tại</div>
+            </div>
+            <div class="form-group">
+                <label>Số quyển thêm:</label>
+                <input type="number" id="existingBookQuantity" min="1" placeholder="Nhập số quyển">
+                <div class="error-message" id="existingBookQuantityError">Số quyển phải lớn hơn 0</div>
+            </div>
+            <div class="modal-buttons">
+                <button type="submit" class="btn">Thêm</button>
+                <button type="button" class="btn" id="cancelExistingBtn">Hủy</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="borrowModal">
+    <div class="modal-content">
+        <div class="modal-header">Mượn sách</div>
+        <form id="borrowForm">
+            <div class="form-group">
+                <label>Mã số sách:</label>
+                <input type="text" id="borrowBookId" maxlength="5" placeholder="Nhập mã sách">
+                <div class="error-message" id="borrowBookIdError">Mã sách không tồn tại hoặc đã hết</div>
+            </div>
+            <div class="form-group">
+                <label>Số quyển mượn:</label>
+                <input type="number" id="borrowQuantity" min="1" placeholder="Nhập số quyển">
+                <div class="error-message" id="borrowQuantityError">Số quyển không hợp lệ</div>
+            </div>
+            <div class="modal-buttons">
+                <button type="submit" class="btn">Mượn</button>
+                <button type="button" class="btn" id="cancelBorrowBtn">Hủy</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    class Book {
+        constructor(id, name, year, quantity) {
+            this.id = id;
+            this.name = name;
+            this.year = year;
+            this.quantity = quantity;
+            this.status = quantity > 0;
+        }
+
+        updateStatus() {
+            this.status = this.quantity > 0;
+        }
+
+        addQuantity(amount) {
+            this.quantity += amount;
+            this.updateStatus();
+        }
+
+        borrowQuantity(amount) {
+            if (this.quantity >= amount) {
+                this.quantity -= amount;
+                this.updateStatus();
+                return true;
+            }
+            return false;
+        }
+    }
+
+    class BookManagement {
+        constructor() {
+            this.books = [
+                new Book('12345', 'Toán', '2000', 3),
+                new Book('23456', 'Văn', '1998', 4),
+                new Book('37456', 'Tiếng Anh', '1999', 5)
+            ];
+            this.initializeEvents();
+            this.renderTable();
+        }
+
+        initializeEvents() {
+            document.getElementById('addNewBtn').addEventListener('click', () => this.openAddNewModal());
+            document.getElementById('addExistingBtn').addEventListener('click', () => this.openAddExistingModal());
+            document.getElementById('borrowBtn').addEventListener('click', () => this.openBorrowModal());
+            document.getElementById('showMostBtn').addEventListener('click', () => this.showMostBooks());
+
+            document.getElementById('cancelNewBtn').addEventListener('click', () => this.closeModal('addNewModal'));
+            document.getElementById('cancelExistingBtn').addEventListener('click', () => this.closeModal('addExistingModal'));
+            document.getElementById('cancelBorrowBtn').addEventListener('click', () => this.closeModal('borrowModal'));
+
+            document.getElementById('addNewForm').addEventListener('submit', (e) => this.handleAddNew(e));
+            document.getElementById('addExistingForm').addEventListener('submit', (e) => this.handleAddExisting(e));
+            document.getElementById('borrowForm').addEventListener('submit', (e) => this.handleBorrow(e));
+
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        this.closeModal(modal.id);
+                    }
+                });
+            });
+        }
+
+        renderTable() {
+            const tbody = document.getElementById('bookTableBody');
+            tbody.innerHTML = '';
+
+            this.books.forEach(book => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                        <td>${book.id}</td>
+                        <td>${book.name}</td>
+                        <td>${book.year}</td>
+                        <td>${book.quantity}</td>
+                        <td class="${book.status ? 'status-true' : 'status-false'}">
+                            ${book.status ? 'True' : 'False'}
+                        </td>
+                        <td>
+                            <button class="action-btn" onclick="bookManagement.deleteBook('${book.id}')">Xóa</button>
+                        </td>
+                    `;
+                tbody.appendChild(row);
+            });
+        }
+
+        validateBookId(id) {
+            if (id.length !== 5) return false;
+            const firstChar = parseInt(id[0]);
+            if (firstChar < 1 || firstChar > 5) return false;
+            for (let i = 1; i < 5; i++) {
+                if (!/\d/.test(id[i])) return false;
+            }
+            return true;
+        }
+
+        validateYear(year) {
+            return /^\d{4}$/.test(year);
+        }
+
+        showError(elementId, show = true) {
+            const element = document.getElementById(elementId);
+            if (show) {
+                element.classList.add('active');
+                element.previousElementSibling.classList.add('error');
+            } else {
+                element.classList.remove('active');
+                element.previousElementSibling.classList.remove('error');
+            }
+        }
+
+        openAddNewModal() {
+            document.getElementById('addNewModal').classList.add('active');
+            document.getElementById('addNewForm').reset();
+            this.clearErrors('new');
+        }
+
+        openAddExistingModal() {
+            document.getElementById('addExistingModal').classList.add('active');
+            document.getElementById('addExistingForm').reset();
+            this.clearErrors('existing');
+        }
+
+        openBorrowModal() {
+            document.getElementById('borrowModal').classList.add('active');
+            document.getElementById('borrowForm').reset();
+            this.clearErrors('borrow');
+        }
+
+        closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        clearErrors(type) {
+            const prefixes = {
+                'new': ['newBookId', 'newBookName', 'newBookYear', 'newBookQuantity'],
+                'existing': ['existingBookId', 'existingBookQuantity'],
+                'borrow': ['borrowBookId', 'borrowQuantity']
+            };
+
+            prefixes[type].forEach(prefix => {
+                this.showError(prefix + 'Error', false);
+            });
+        }
+
+        handleAddNew(e) {
+            e.preventDefault();
+            this.clearErrors('new');
+
+            const id = document.getElementById('newBookId').value.trim();
+            const name = document.getElementById('newBookName').value.trim();
+            const year = document.getElementById('newBookYear').value.trim();
+            const quantity = parseInt(document.getElementById('newBookQuantity').value);
+
+            let hasError = false;
+
+            if (!this.validateBookId(id)) {
+                this.showError('newBookIdError');
+                hasError = true;
+            }
+
+            if (!name) {
+                this.showError('newBookNameError');
+                hasError = true;
+            }
+
+            if (!this.validateYear(year)) {
+                this.showError('newBookYearError');
+                hasError = true;
+            }
+
+            if (isNaN(quantity) || quantity <= 0) {
+                this.showError('newBookQuantityError');
+                hasError = true;
+            }
+
+            if (this.books.find(b => b.id === id)) {
+                this.showError('newBookIdError');
+                document.getElementById('newBookIdError').textContent = 'Mã sách đã tồn tại';
+                hasError = true;
+            }
+
+            if (hasError) return;
+
+            this.books.push(new Book(id, name, year, quantity));
+            this.renderTable();
+            this.closeModal('addNewModal');
+            alert('Thêm sách mới thành công!');
+        }
+
+        handleAddExisting(e) {
+            e.preventDefault();
+            this.clearErrors('existing');
+
+            const id = document.getElementById('existingBookId').value.trim();
+            const quantity = parseInt(document.getElementById('existingBookQuantity').value);
+
+            let hasError = false;
+
+            const book = this.books.find(b => b.id === id);
+            if (!book) {
+                this.showError('existingBookIdError');
+                hasError = true;
+            }
+
+            if (isNaN(quantity) || quantity <= 0) {
+                this.showError('existingBookQuantityError');
+                hasError = true;
+            }
+
+            if (hasError) return;
+
+            book.addQuantity(quantity);
+            this.renderTable();
+            this.closeModal('addExistingModal');
+            alert(`Đã thêm ${quantity} quyển sách "${book.name}"`);
+        }
+
+        handleBorrow(e) {
+            e.preventDefault();
+            this.clearErrors('borrow');
+
+            const id = document.getElementById('borrowBookId').value.trim();
+            const quantity = parseInt(document.getElementById('borrowQuantity').value);
+
+            let hasError = false;
+
+            const book = this.books.find(b => b.id === id);
+            if (!book || !book.status) {
+                this.showError('borrowBookIdError');
+                hasError = true;
+            }
+
+            if (isNaN(quantity) || quantity <= 0) {
+                this.showError('borrowQuantityError');
+                hasError = true;
+            } else if (book && quantity > book.quantity) {
+                this.showError('borrowQuantityError');
+                document.getElementById('borrowQuantityError').textContent =
+                    `Chỉ còn ${book.quantity} quyển`;
+                hasError = true;
+            }
+
+            if (hasError) return;
+
+            book.borrowQuantity(quantity);
+            this.renderTable();
+            this.closeModal('borrowModal');
+            alert(`Đã mượn ${quantity} quyển sách "${book.name}"`);
+        }
+
+        deleteBook(id) {
+            if (confirm('Bạn có chắc muốn xóa sách này?')) {
+                this.books = this.books.filter(b => b.id !== id);
+                this.renderTable();
+                alert('Đã xóa sách thành công!');
+            }
+        }
+
+        showMostBooks() {
+            if (this.books.length === 0) {
+                alert('Không có sách nào trong danh sách');
+                return;
+            }
+
+            const maxQuantity = Math.max(...this.books.map(b => b.quantity));
+            const mostBooks = this.books.filter(b => b.quantity === maxQuantity);
+
+            let message = `Sách có số quyển nhiều nhất (${maxQuantity} quyển):\n\n`;
+            mostBooks.forEach(book => {
+                message += `- ${book.name} (Mã: ${book.id})\n`;
+            });
+
+            alert(message);
+        }
+    }
+
+    const bookManagement = new BookManagement();
+</script>
+</body>
+</html>

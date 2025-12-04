@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>bai2</title>
+</head>
+<body>
+<script>
+    function sumOfDivisors(n) {
+        let sum = 0;
+        for (let i = 1; i <= n / 2; i++) {
+            if (n % i === 0) {
+                sum += i;
+            }
+        }
+        return sum;
+    }
+
+    function isAmicable(a, b) {
+        let sumA = sumOfDivisors(a);
+        let sumB = sumOfDivisors(b);
+        return sumA === b && sumB === a;
+    }
+
+    document.write(isAmicable(220, 284)); // True
+    document.write("<br>");
+    document.write(isAmicable(123, 456)); // False
+    // có thể thay các cặp số thân thiết sau để thử:1184 và 1210; 2620 và 2924
+
+</script>
+</body>
+</html>
